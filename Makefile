@@ -18,6 +18,7 @@ LDFLAG_STATIC=-Wl,-Bstatic
 LDFLAG_DYNAMIC=-Wl,-Bdynamic
 # 指定加载库
 LDFLAG_CAP=-lcap
+# $(1),$(2)call函数里规定的参数形式,比如说（1）=20的话   echo $(1)的话就会打印出20
 LDFLAG_GNUTLS=-lgnutls-opensslFUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
 LDFLAG_CRYPTO=-lcrypto
 LDFLAG_IDN=-lidn
@@ -26,42 +27,43 @@ LDFLAG_SYSFS=-lsysfs
 
 #
 # Options
-#
+#所有选项
 # 变量定义，设置开关
+
 # Capability support (with libcap) [yes|static|no]
 # 使用libcap网络数据包捕获函数包对性能进行支持
 USE_CAP=yes
 # sysfs support (with libsysfs - deprecated) [no|yes|static]
-# sysfs虚拟文件系统
+# sysfs是指虚拟文件系统的支持
 # libsysfs 访问系统里的设备信息的一个标准库
-# no是指不使用libsysfs标准库对sysfs进行支持
+# 这句话是指是指不使用libsysfs标准库对sysfs进行支持
 E_SYSFS=no
 # IDN support (experimental) [no|yes|static]
-# no不使用国际域名支持
+# 对国际域名的支持
 USE_IDN=no
 
 # Do not use getifaddrs [no|yes|static]
-#不使用getifaddrs函数获取本机IP地址
+# 不使用getifaddrs函数获取本机IP地址
 WITHOUT_IFADDRS=no
 # arping default device (e.g. eth0) []
-#使用arp命令检测默认的设备驱动
+# 使用arp命令检测默认的设备驱动，网络设备号为eth0
 ARPING_DEFAULT_DEVICE=
 
 # GNU TLS library for ping6 [yes|no|static]
-#使用GNUTLS库
+# 使用GNUTLS库实现加密协议
 USE_GNUTLS=yes
 # Crypto library for ping6 [shared|static]
-#分享密码类库
+# 分享密码类库
 USE_CRYPTO=shared
 # Resolv library for ping6 [yes|static]
-#使用Resolv类库
+# 使用Resolv类库
 USE_RESOLV=yes
 # ping6 source routing (deprecated by RFC5095) [no|yes|RFC3542]
-#不使用ping6源路由不显示路由的详细的信息
+# ping6源路由不显示路由的详细的信息
 ENABLE_PING6_RTHDR=no
 
 # rdisc server (-r option) support [no|yes]
-#不支持rdisc（路由发现守护程序）服务器
+# rdisc（路由发现守护程序）服务器支持
 ENABLE_RDISC_SERVER=no
 
 # -------------------------------------
@@ -81,8 +83,10 @@ LDLIB=
 
 
 # USE_GNUTLS: DEF_GNUTLS, LIB_GNUTLS
-#使用
+#对GUNTLS库的使用：DEF_GNUTLS, LIB_GNUTLS
 # USE_CRYPTO: LIB_CRYPTO
+#对密码库的使用：LIB_CRYPTO
+#ifeq是个判别是否相等的关键字，ifneq($(USE_GNUTLS),no)的意思是取出USE_GNUTLS的值看与no是否相等，相等执行下面两条不相等执行else
 ifneq ($(USE_GNUTLS),no)
 	LIB_CRYPTO = $(call FUNC_LIB,$(USE_GNUTLS),$(LDFLAG_GNUTLS))
 	DEF_CRYPTO = -DUSE_GNUTLS
@@ -91,37 +95,48 @@ else
 endif
 
 # USE_RESOLV: LIB_RESOLV
+#对RESOLV的使用
+
 LIB_RESOLV = $(call FUNC_LIB,$(USE_RESOLV),$(LDFLAG_RESOLV))
 
 # USE_CAP:  DEF_CAP, LIB_CAP
+#对CAP的使用
+#ifeq是个判别是否相等的关键字
+#DCAPABILTIES前面加-的意思是 不管这里是否出错,继续处理;如果不加的话,一但有错 就会停止处理了.
 ifneq ($(USE_CAP),no)
 	DEF_CAP = -DCAPABILITIES
 	LIB_CAP = $(call FUNC_LIB,$(USE_CAP),$(LDFLAG_CAP))
 endif
 
 # USE_SYSFS: DEF_SYSFS, LIB_SYSFS
+#对SYSFS文件系统的使用
+#取USE_SYSFS的值与no比较看是否相等
 ifneq ($(USE_SYSFS),no)
 	DEF_SYSFS = -DUSE_SYSFS
 	LIB_SYSFS = $(call FUNC_LIB,$(USE_SYSFS),$(LDFLAG_SYSFS))
 endif
 
 # USE_IDN: DEF_IDN, LIB_IDN
+# 对国际化域名的使用：DEF_IDN,LIB_IDN
 ifneq ($(USE_IDN),no)
 	DEF_IDN = -DUSE_IDN
 	LIB_IDN = $(call FUNC_LIB,$(USE_IDN),$(LDFLAG_IDN))
 endif
 
 # WITHOUT_IFADDRS: DEF_WITHOUT_IFADDRS
+#获取本地IP地址
 ifneq ($(WITHOUT_IFADDRS),no)
 	DEF_WITHOUT_IFADDRS = -DWITHOUT_IFADDRS
 endif
 
 # ENABLE_RDISC_SERVER: DEF_ENABLE_RDISC_SERVER
+#对RDISC服务器的设置
 ifneq ($(ENABLE_RDISC_SERVER),no)
 	DEF_ENABLE_RDISC_SERVER = -DRDISC_SERVER
 endif
 
 # ENABLE_PING6_RTHDR: DEF_ENABLE_PING6_RTHDR
+#对ping6源路由的使用
 ifneq ($(ENABLE_PING6_RTHDR),no)
 	DEF_ENABLE_PING6_RTHDR = -DPING6_ENABLE_RTHDR
 ifeq ($(ENABLE_PING6_RTHDR),RFC3542)
@@ -155,9 +170,19 @@ all: $(TARGETS)
 	$(COMPILE.c) $< $(DEF_$(patsubst %.o,%,$@)) -o $@
 $(TARGETS): %: %.o
 	$(LINK.o) $^ $(LIB_$@) $(LDLIBS) -o $@
-
+## COMPILE.c=$(CC) $(CFLAGS) $(CPPFLAGS) -c
+# $< 依赖目标中的第一个目标名字 
+# $@ 表示目标
+# $^ 所有的依赖目标的集合 
+# 在$(patsubst %.o,%,$@ )中，patsubst把目标中的变量符合后缀是.o的全部删除,  DEF_ping
+# LINK.o把.o文件链接在一起的命令行,缺省值是$(CC) $(LDFLAGS) $(TARGET_ARCH)
+#
+#以ping为例，翻译为：
+# gcc -O3 -fno-strict-aliasing -Wstrict-prototypes -Wall -g -D_GNU_SOURCE    -c ping.c -DCAPABILITIES   -o ping.o
+#gcc   ping.o ping_common.o -lcap    -o ping
 # -------------------------------------
 # arping
+#设置arping,实现通过地址解析协议，使用arping向目的主机发送ARP报文，通过目的主机的IP获得该主机的硬件地址
 DEF_arping = $(DEF_SYSFS) $(DEF_CAP) $(DEF_IDN) $(DEF_WITHOUT_IFADDRS)
 LIB_arping = $(LIB_SYSFS) $(LIB_CAP) $(LIB_IDN)
 
@@ -166,30 +191,36 @@ DEF_arping += -DDEFAULT_DEVICE=\"$(ARPING_DEFAULT_DEVICE)\"
 endif
 
 # clockdiff
+#设置clockdiff,使用时间戳来测算目的主机和本地主机的系统时间差。
 DEF_clockdiff = $(DEF_CAP)
 LIB_clockdiff = $(LIB_CAP)
 
 # ping / ping6
+# 是指ping命令，测试另一台主机是否可达
 DEF_ping_common = $(DEF_CAP) $(DEF_IDN)
 DEF_ping  = $(DEF_CAP) $(DEF_IDN) $(DEF_WITHOUT_IFADDRS)
 LIB_ping  = $(LIB_CAP) $(LIB_IDN)
 DEF_ping6 = $(DEF_CAP) $(DEF_IDN) $(DEF_WITHOUT_IFADDRS) $(DEF_ENABLE_PING6_RTHDR) $(DEF_CRYPTO)
 LIB_ping6 = $(LIB_CAP) $(LIB_IDN) $(LIB_RESOLV) $(LIB_CRYPTO)
 
+# 列出所有的依赖关系
 ping: ping_common.o
 ping6: ping_common.o
 ping.o ping_common.o: ping_common.h
 ping6.o: ping_common.h in6_flowlabel.h
 
 # rarpd
+# 通过逆地址解析协议RARP，客户端可以通过硬件地址得到对应的IP地址，rarpd就是处理RARP请求的服务器程序
 DEF_rarpd =
 LIB_rarpd =
 
 # rdisc
+#  rdisc程序根据编译的不同可以程序可以编译成具有或没有服务器功能。
 DEF_rdisc = $(DEF_ENABLE_RDISC_SERVER)
 LIB_rdisc =
 
 # tracepath
+# tracepath可以让我们看到IP数据报从一台主机传到另一台主机所经过的路由。
 DEF_tracepath = $(DEF_IDN)
 LIB_tracepath = $(LIB_IDN)
 
@@ -202,15 +233,19 @@ DEF_traceroute6 = $(DEF_CAP) $(DEF_IDN)
 LIB_traceroute6 = $(LIB_CAP) $(LIB_IDN)
 
 # tftpd
+# tftpd程序就是进行tftp服务的服务程序。
 DEF_tftpd =
 DEF_tftpsubs =
 LIB_tftpd =
 
+#列出依赖关系
 tftpd: tftpsubs.o
 tftpd.o tftpsubs.o: tftp.h
 
 # -------------------------------------
 # ninfod
+# @表示makefile执行这条命令时不显示出来
+# 在"set -e"之后出现的代码，一旦出现了返回值非零，整个脚本就会立即退出
 ninfod:
 	@set -e; \
 		if [ ! -f ninfod/Makefile ]; then \
@@ -222,6 +257,7 @@ ninfod:
 
 # -------------------------------------
 # modules / check-kernel are only for ancient kernels; obsolete
+# 仅对内核版本较低的内核进行检测
 check-kernel:
 ifeq ($(KERNEL_INCLUDE),)
 	@echo "Please, set correct KERNEL_INCLUDE"; false
