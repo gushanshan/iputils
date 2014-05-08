@@ -267,10 +267,13 @@ else
 		echo "Please, set correct KERNEL_INCLUDE"; false; fi
 endif
 
+# 内核检测模块
 modules: check-kernel
 	$(MAKE) KERNEL_INCLUDE=$(KERNEL_INCLUDE) -C Modules
 
 # -------------------------------------
+# 生成man文档
+# distclean 类似make clean 清除object文件，但同时也将configure生成的文件全部删除掉，包括Makefile。
 man:
 	$(MAKE) -C doc man
 
