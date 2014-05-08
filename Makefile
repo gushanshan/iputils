@@ -1,18 +1,24 @@
-#
+#构造
 # Configuration
 #
-
 # CC
+#指定gcc程序
+#gcc是GNU C程序编译器，对于UNIX类的脚本程序而言
 CC=gcc
-# Path to parent kernel include files directory
-LIBC_INCLUDE=/usr/include
+#指定静态链接库的路径
+LDFLAG_STATIC=-Wl,-Bstatic=/usr/include
 # Libraries
 ADDLIB=
 # Linker flags
+# wl选项告诉编译器将后面的参数传给连接器
+# -Wl,-Bstatic和-Wl,-Bdynamic。这两个选项是gcc的特殊选项，它会将选项的参数传递给链接器，作为链接器的选项。
+# -wl,Bstatic告诉链接器使用-Bstatic选项，该选项是告诉链接器，对接下来的-l选项使用静态链接库
+# -wl,-Bdynamic就是告诉链接器对接下来的-l选项使用动态链接
 LDFLAG_STATIC=-Wl,-Bstatic
 LDFLAG_DYNAMIC=-Wl,-Bdynamic
+# 指定加载库
 LDFLAG_CAP=-lcap
-LDFLAG_GNUTLS=-lgnutls-openssl
+LDFLAG_GNUTLS=-lgnutls-opensslFUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
 LDFLAG_CRYPTO=-lcrypto
 LDFLAG_IDN=-lidn
 LDFLAG_RESOLV=-lresolv
@@ -21,20 +27,28 @@ LDFLAG_SYSFS=-lsysfs
 #
 # Options
 #
-
+# 变量定义，设置开关
 # Capability support (with libcap) [yes|static|no]
+# 使用libcap网络数据包捕获函数包对性能进行支持
 USE_CAP=yes
 # sysfs support (with libsysfs - deprecated) [no|yes|static]
-USE_SYSFS=no
+# sysfs虚拟文件系统
+# libsysfs 访问系统里的设备信息的一个标准库
+# no是指不使用libsysfs标准库对sysfs进行支持
+E_SYSFS=no
 # IDN support (experimental) [no|yes|static]
+# no不使用国际域名支持
 USE_IDN=no
 
 # Do not use getifaddrs [no|yes|static]
+#不使用getifaddrs函数获取本机IP地址
 WITHOUT_IFADDRS=no
 # arping default device (e.g. eth0) []
+#使用arp命令检测默认的设备驱动
 ARPING_DEFAULT_DEVICE=
 
 # GNU TLS library for ping6 [yes|no|static]
+#使用GNUTLS库
 USE_GNUTLS=yes
 # Crypto library for ping6 [shared|static]
 USE_CRYPTO=shared
@@ -49,13 +63,18 @@ ENABLE_RDISC_SERVER=no
 # -------------------------------------
 # What a pity, all new gccs are buggy and -Werror does not work. Sigh.
 # CCOPT=-fno-strict-aliasing -Wstrict-prototypes -Wall -Werror -g
+#-Wstrict-prototypes: 如果函数的声明或定义没有指出参数类型，编译器就发出警告
+#-Wall 打印所有的警告信息
+#-g 加入调试信息
+#-O3对代码使用3级优化
+#-D_GNU_SOURCE这个参数表示你编写符合 GNU 规范的代码
 CCOPT=-fno-strict-aliasing -Wstrict-prototypes -Wall -g
 CCOPTOPT=-O3
 GLIBCFIX=-D_GNU_SOURCE
 DEFINES=
 LDLIB=
 
-FUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
+
 
 # USE_GNUTLS: DEF_GNUTLS, LIB_GNUTLS
 # USE_CRYPTO: LIB_CRYPTO
