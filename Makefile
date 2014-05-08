@@ -51,13 +51,17 @@ ARPING_DEFAULT_DEVICE=
 #使用GNUTLS库
 USE_GNUTLS=yes
 # Crypto library for ping6 [shared|static]
+#分享密码类库
 USE_CRYPTO=shared
 # Resolv library for ping6 [yes|static]
+#使用Resolv类库
 USE_RESOLV=yes
 # ping6 source routing (deprecated by RFC5095) [no|yes|RFC3542]
+#不使用ping6源路由不显示路由的详细的信息
 ENABLE_PING6_RTHDR=no
 
 # rdisc server (-r option) support [no|yes]
+#不支持rdisc（路由发现守护程序）服务器
 ENABLE_RDISC_SERVER=no
 
 # -------------------------------------
@@ -77,6 +81,7 @@ LDLIB=
 
 
 # USE_GNUTLS: DEF_GNUTLS, LIB_GNUTLS
+#使用
 # USE_CRYPTO: LIB_CRYPTO
 ifneq ($(USE_GNUTLS),no)
 	LIB_CRYPTO = $(call FUNC_LIB,$(USE_GNUTLS),$(LDFLAG_GNUTLS))
