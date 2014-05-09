@@ -31,7 +31,7 @@ LDFLAG_SYSFS=-lsysfs
 # 变量定义，设置开关
 
 # Capability support (with libcap) [yes|static|no]
-# 使用libcap网络数据包捕获函数包对性能进行支持
+# 使用libcap网络数据包捕获函数包对性能进行支持，状态为，是，静态，没有
 USE_CAP=yes
 # sysfs support (with libsysfs - deprecated) [no|yes|static]
 # sysfs是指虚拟文件系统的支持
@@ -39,7 +39,7 @@ USE_CAP=yes
 # 这句话是指是指不使用libsysfs标准库对sysfs进行支持
 E_SYSFS=no
 # IDN support (experimental) [no|yes|static]
-# 对国际域名的支持
+# 对国际域名的支持，状态为，是，静态，没有
 USE_IDN=no
 
 # Do not use getifaddrs [no|yes|static]
@@ -50,7 +50,7 @@ WITHOUT_IFADDRS=no
 ARPING_DEFAULT_DEVICE=
 
 # GNU TLS library for ping6 [yes|no|static]
-# 使用GNUTLS库实现加密协议
+# 使用GNU TLS库ping6的状态为是，从而实现加密协议
 USE_GNUTLS=yes
 # Crypto library for ping6 [shared|static]
 # 分享密码类库
@@ -63,7 +63,7 @@ USE_RESOLV=yes
 ENABLE_PING6_RTHDR=no
 
 # rdisc server (-r option) support [no|yes]
-# rdisc（路由发现守护程序）服务器支持
+# rdisc（路由发现守护程序）服务器不支持-r
 ENABLE_RDISC_SERVER=no
 
 # -------------------------------------
@@ -80,7 +80,9 @@ GLIBCFIX=-D_GNU_SOURCE
 DEFINES=
 LDLIB=
 
-
+#判断如果过滤掉了参数1中除了静态函数外的其他函数，就将$(1)),$(LDFLAG_STATIC) $(2)这几个变量所代表的库赋给FUNC_LIB
+#否则，就将参数2赋给FUNC_LIB
+FUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
 
 # USE_GNUTLS: DEF_GNUTLS, LIB_GNUTLS
 #对GUNTLS库的使用：DEF_GNUTLS, LIB_GNUTLS
@@ -96,7 +98,7 @@ endif
 
 # USE_RESOLV: LIB_RESOLV
 #对RESOLV的使用
-
+#判断RESOLV函数库中函数是否重复
 LIB_RESOLV = $(call FUNC_LIB,$(USE_RESOLV),$(LDFLAG_RESOLV))
 
 # USE_CAP:  DEF_CAP, LIB_CAP
@@ -110,21 +112,21 @@ endif
 
 # USE_SYSFS: DEF_SYSFS, LIB_SYSFS
 #对SYSFS文件系统的使用
-#取USE_SYSFS的值与no比较看是否相等
+#取USE_SYSFS的值与no比较看是否相等，看函数是否重复
 ifneq ($(USE_SYSFS),no)
 	DEF_SYSFS = -DUSE_SYSFS
 	LIB_SYSFS = $(call FUNC_LIB,$(USE_SYSFS),$(LDFLAG_SYSFS))
 endif
 
 # USE_IDN: DEF_IDN, LIB_IDN
-# 对国际化域名的使用：DEF_IDN,LIB_IDN
+# 对国际化域名的使用：DEF_IDN,LIB_IDN，判断是否重复
 ifneq ($(USE_IDN),no)
 	DEF_IDN = -DUSE_IDN
 	LIB_IDN = $(call FUNC_LIB,$(USE_IDN),$(LDFLAG_IDN))
 endif
 
 # WITHOUT_IFADDRS: DEF_WITHOUT_IFADDRS
-#获取本地IP地址
+#判断是否重复，获取本地IP地址
 ifneq ($(WITHOUT_IFADDRS),no)
 	DEF_WITHOUT_IFADDRS = -DWITHOUT_IFADDRS
 endif
@@ -152,7 +154,7 @@ TARGETS=$(IPV4_TARGETS) $(IPV6_TARGETS)
 CFLAGS=$(CCOPTOPT) $(CCOPT) $(GLIBCFIX) $(DEFINES)
 LDLIBS=$(LDLIB) $(ADDLIB)
 
-UNAME_N:=$(shell uname -n)
+UNAME_N:=$(shell uname -n)#将变量复制给UNAME
 LASTTAG:=$(shell git describe HEAD | sed -e 's/-.*//')
 TODAY=$(shell date +%Y/%m/%d)
 DATE=$(shell date --date $(TODAY) +%Y%m%d)
@@ -160,6 +162,7 @@ TAG:=$(shell date --date=$(TODAY) +s%Y%m%d)
 
 
 # -------------------------------------
+#将内核产生的所有无用的文件删除
 .PHONY: all ninfod clean distclean man html check-kernel modules snapshot
 
 all: $(TARGETS)
@@ -185,6 +188,7 @@ $(TARGETS): %: %.o
 #设置arping,实现通过地址解析协议，使用arping向目的主机发送ARP报文，通过目的主机的IP获得该主机的硬件地址
 DEF_arping = $(DEF_SYSFS) $(DEF_CAP) $(DEF_IDN) $(DEF_WITHOUT_IFADDRS)
 LIB_arping = $(LIB_SYSFS) $(LIB_CAP) $(LIB_IDN)
+
 
 ifneq ($(ARPING_DEFAULT_DEVICE),)
 DEF_arping += -DDEFAULT_DEVICE=\"$(ARPING_DEFAULT_DEVICE)\"
@@ -239,6 +243,8 @@ DEF_tftpsubs =
 LIB_tftpd =
 
 #列出依赖关系
+tftpd依赖与tftpsubs.o文件
+tftpd.o和tftpsubs.o文件依赖于tftp.h文件
 tftpd: tftpsubs.o
 tftpd.o tftpsubs.o: tftp.h
 
@@ -248,7 +254,7 @@ tftpd.o tftpsubs.o: tftp.h
 # 在"set -e"之后出现的代码，一旦出现了返回值非零，整个脚本就会立即退出
 ninfod:
 	@set -e; \
-		if [ ! -f ninfod/Makefile ]; then \
+		if [ ! -f ninfod/Makefile ]; then \#进行压缩和解压缩
 			cd ninfod; \
 			./configure; \
 			cd ..; \
@@ -275,20 +281,21 @@ modules: check-kernel
 # 生成man文档
 # distclean 类似make clean 清除object文件，但同时也将configure生成的文件全部删除掉，包括Makefile。
 man:
-	$(MAKE) -C doc man
+	$(MAKE) -C doc man#生成man文档
 
 html:
-	$(MAKE) -C doc html
+	$(MAKE) -C doc html#生成html网页文档
 
 clean:
 	@rm -f *.o $(TARGETS)
-	@$(MAKE) -C Modules clean
+	@$(MAKE) -C Modules clean#删除Modules下makefile里写的文件
 	@$(MAKE) -C doc clean
 	@set -e; \
+	#如果存在ninfod目录下makefile文件就进去读取，并删除目标文件
 		if [ -f ninfod/Makefile ]; then \
 			$(MAKE) -C ninfod clean; \
 		fi
-
+#清除ninfod所有object文件，包括Makefile文件
 distclean: clean
 	@set -e; \
 		if [ -f ninfod/Makefile ]; then \
@@ -298,18 +305,20 @@ distclean: clean
 # -------------------------------------
 snapshot:
 	@if [ x"$(UNAME_N)" != x"pleiades" ]; then echo "Not authorized to advance snapshot"; exit 1; fi
+        #将TAG内容重定向到RELNOTES>NEW中
 	@echo "[$(TAG)]" > RELNOTES.NEW
 	@echo >>RELNOTES.NEW
 	@git log --no-merges $(LASTTAG).. | git shortlog >> RELNOTES.NEW
+	#将git log 和git shortlog的内容重定向到RELNOTES>NEW中
 	@echo >> RELNOTES.NEW
 	@cat RELNOTES >> RELNOTES.NEW
-	@mv RELNOTES.NEW RELNOTES
+	@mv RELNOTES.NEW RELNOTES#移动文件RELNOTES
 	@sed -e "s/^%define ssdate .*/%define ssdate $(DATE)/" iputils.spec > iputils.spec.tmp
 	@mv iputils.spec.tmp iputils.spec
-	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h
-	@$(MAKE) -C doc snapshot
-	@$(MAKE) man
-	@git commit -a -m "iputils-$(TAG)"
-	@git tag -s -m "iputils-$(TAG)" $(TAG)
-	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2
+	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h#将TAG变量的内容输出到SNAPSHOT.h中
+	@$(MAKE) -C doc snapshot#生成doc文档
+	@$(MAKE) man#执行man命令
+	@git commit -a -m "iputils-$(TAG)"#打补丁，提交
+	@git tag -s -m "iputils-$(TAG)" $(TAG)#使用私钥
+	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2#导出
 
