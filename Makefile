@@ -315,10 +315,10 @@ snapshot:
 	@mv RELNOTES.NEW RELNOTES#移动文件RELNOTES
 	@sed -e "s/^%define ssdate .*/%define ssdate $(DATE)/" iputils.spec > iputils.spec.tmp
 	@mv iputils.spec.tmp iputils.spec
-	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h#将TAG变量的内容输出到SNAPSHOT.h中
-	@$(MAKE) -C doc snapshot#生成doc文档
-	@$(MAKE) man#执行man命令
-	@git commit -a -m "iputils-$(TAG)"#打补丁，提交
-	@git tag -s -m "iputils-$(TAG)" $(TAG)#使用私钥
-	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2#导出
+	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h #将TAG变量的内容输出到SNAPSHOT.h中
+	@$(MAKE) -C doc snapshot #生成doc文档
+	@$(MAKE) man #执行man命令
+	@git commit -a -m "iputils-$(TAG)" #打补丁，提交
+	@git tag -s -m "iputils-$(TAG)" $(TAG) #使用私钥
+	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2 #导出
 
